@@ -37,7 +37,7 @@ class MainViewModel @Inject constructor(
     private suspend fun fetchApiKeysAndStoreThemSecurely(): RequestState<Boolean> {
         return try {
             KeyPairHandler.generateKeyPair()
-            val publicKey = KeyPairHandler.getPublicKey()
+            val publicKey = KeyPairHandler.getPublicKeyString()
             val fetchedData = fetchEncryptedApiKeys(publicKey = publicKey)
             if (fetchedData != null) {
                 val decryptedData = KeyPairHandler.decryptTheData(encryptedData = fetchedData)

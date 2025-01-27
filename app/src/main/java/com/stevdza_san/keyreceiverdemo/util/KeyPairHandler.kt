@@ -5,6 +5,8 @@ import android.security.keystore.KeyProperties
 import java.nio.charset.StandardCharsets
 import java.security.KeyPairGenerator
 import java.security.KeyStore
+import java.security.PrivateKey
+import java.security.PublicKey
 import java.util.Base64
 import javax.crypto.Cipher
 
@@ -39,7 +41,7 @@ object KeyPairHandler {
         keyPairGenerator.generateKeyPair()
     }
 
-    fun getPublicKey(): String {
+    fun getPublicKeyString(): String {
         val privateKeyEntry = keyStore?.getEntry(KEYSTORE_ALIAS, null) as? KeyStore.PrivateKeyEntry
         val encodedPublicKey = privateKeyEntry?.certificate?.publicKey?.encoded
         return Base64.getEncoder().encodeToString(encodedPublicKey)
@@ -47,9 +49,32 @@ object KeyPairHandler {
 
     fun decryptTheData(encryptedData: String): String {
         val cipher = Cipher.getInstance(TRANSFORMATION)
-        val privateKeyEntry = keyStore.getEntry(KEYSTORE_ALIAS, null) as? KeyStore.PrivateKeyEntry
-        cipher.init(Cipher.DECRYPT_MODE, privateKeyEntry?.privateKey)
+        cipher.init(Cipher.DECRYPT_MODE, getPrivateKey())
         val decryptedData = cipher.doFinal(Base64.getDecoder().decode(encryptedData))
         return String(decryptedData, StandardCharsets.UTF_8)
     }
+
+    fun encrypt(bytes: ByteArray): ByteArray {
+        val cipher = Cipher.getInstance(TRANSFORMATION)
+        cipher.init(Cipher.ENCRYPT_MODE, getPublicKey())
+        val encrypted = cipher.doFinal(bytes)
+        return encrypted
+    }
+
+    fun decrypt(bytes: ByteArray): ByteArray {
+        val cipher = Cipher.getInstance(TRANSFORMATION)
+        cipher.init(Cipher.DECRYPT_MODE, getPrivateKey())
+        return cipher.doFinal(bytes)
+    }
+
+    private fun getPrivateKey(): PrivateKey? {
+        val privateKeyEntry = keyStore.getEntry(KEYSTORE_ALIAS, null) as? KeyStore.PrivateKeyEntry
+        return privateKeyEntry?.privateKey
+    }
+
+    private fun getPublicKey(): PublicKey? {
+        val privateKeyEntry = keyStore.getEntry(KEYSTORE_ALIAS, null) as? KeyStore.PrivateKeyEntry
+        return privateKeyEntry?.certificate?.publicKey
+    }
+
 }
